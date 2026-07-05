@@ -1,10 +1,25 @@
 #!/usr/bin/env bash
-# install mcp-guardian pre-commit hook (with whitelist for self-referential files)
+# Install mcp-guardian pre-commit hook
+# Usage: ./scripts/install_guardian_hook.sh [repo_path]
 
-cat > .git/hooks/pre-commit << 'HOOK'
+REPO_PATH="${1:-.}"
+HOOK_PATH="$REPO_PATH/.git/hooks/pre-commit"
+
+if [ ! -d "$REPO_PATH/.git" ]; then
+  echo "❌ Not a Git repository: $REPO_PATH"
+  exit 1
+fi
+
+if [ -f "$HOOK_PATH" ]; then
+  echo "⚠️  Pre-commit hook already exists at $HOOK_PATH"
+  echo "   Remove it first or merge manually."
+  exit 1
+fi
+
+cat > "$HOOK_PATH" << 'HOOK'
 #!/usr/bin/env bash
-# mcp-guardian pre-commit hook — blocks secrets, PII, and internal keywords.
-# Self-referential files (patterns.py, server.py) are whitelisted.
+# mcp-guardian pre-commit hook (example)
+# Customize the RULES array with your own sensitive keywords.
 
 set -e
 
@@ -13,19 +28,15 @@ if [ -z "$STAGED" ]; then
   exit 0
 fi
 
-# Allowlist: self-referential files that ship the pattern rules
-WHITELIST="src/mcp_guardian/patterns.py|src/mcp_guardian/server.py|scripts/|tests/fixtures/"
+# Allowlist of self-referential files (the guardian ships its own rules)
+WHITELIST="src/mcp_guardian/patterns.py|src/mcp_guardian/server.py|tests/fixtures/"
 
-# Patterns: label:regex
+# Patterns: (label, regex)
+# Customize these with your own sensitive keywords:
 declare -a RULES=(
-  "PII:ezedi"
-  "PII:hermes"
-  "PII:playmcp"
-  "PII:sanghak"
-  "PII:상학"
-  "PII:에이전틱"
-  "PII:공모전"
-  "PII:nerin81@gmail"
+  "PII:YOUR_COMPANY"
+  "PII:YOUR_NAME"
+  "PII:YOUR_EMAIL"
   "GH_PAT:ghp_[A-Za-z0-9]{20,}"
   "GH_PAT:gho_[A-Za-z0-9]{20,}"
   "GH_PAT:ghu_[A-Za-z0-9]{20,}"
@@ -67,5 +78,7 @@ fi
 exit 0
 HOOK
 
-chmod +x .git/hooks/pre-commit
-echo "✅ mcp-guardian pre-commit hook installed (with whitelist)"
+chmod +x "$HOOK_PATH"
+echo "✅ Pre-commit hook installed at $HOOK_PATH"
+echo ""
+echo "💡 Customize the RULES array with your own sensitive keywords."

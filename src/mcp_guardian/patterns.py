@@ -7,14 +7,14 @@ without triggering itself.
 
 # Keep this file in sync with HOOK_SCRIPT in server.py.
 PII_KEYWORDS = (
-    "ezedi",
-    "hermes",
-    "playmcp",
-    "에이전틱",
-    "공모전",
-    "sanghak",
-    "상학",
-    "nerin81@gmail",
+    "acme",
+    "internal-tool",
+    "specific-platform",
+    "특정플랫폼",
+    "특정행사",
+    "johndoe",
+    "홍길동",
+    "user@example.com",
 )
 
 GITHUB_PAT_PATTERNS = (

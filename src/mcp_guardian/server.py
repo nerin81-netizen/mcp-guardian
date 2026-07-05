@@ -37,14 +37,14 @@ GUARDIAN_WHITELIST = (
 # Sensitive patterns. Mirrors the rules shipped by the mcp-publish skill.
 PATTERNS: dict[str, list[tuple[str, str]]] = {
     "PII / user-identifying keywords": [
-        (r"\bezedi\b", "company name (case-insensitive variants)"),
-        (r"\bhermes\b", "internal infrastructure name"),
-        (r"\bplaymcp\b", "platform-specific term"),
-        (r"\b에이전틱\b", "platform-specific term (Korean)"),
-        (r"\b공모전\b", "competition-specific term (Korean)"),
-        (r"\bsanghak\b", "personal name / alias"),
-        (r"\b상학\b", "personal name (Korean)"),
-        (r"nerin81@gmail", "personal email address"),
+        (r"\bacme\b", "company name (example)"),
+        (r"\binternal-tool\b", "internal project name (example)"),
+        (r"\bspecific-platform\b", "platform-specific term (example)"),
+        (r"\b특정플랫폼\b", "platform-specific term (Korean, example)"),
+        (r"\b특정행사\b", "event-specific term (Korean, example)"),
+        (r"\bjohndoe\b", "personal name (example)"),
+        (r"\b홍길동\b", "personal name (Korean, example)"),
+        (r"user@example\.com", "personal email address (example)"),
     ],
     "GitHub Personal Access Tokens": [
         (r"ghp_[A-Za-z0-9]{20,}", "GitHub PAT (OAuth user)"),
@@ -325,16 +325,16 @@ fi
 # Allowlist of self-referential files (the guardian ships its own rules)
 WHITELIST="src/mcp_guardian/patterns.py|src/mcp_guardian/server.py|tests/fixtures/"
 
-# Patterns: (label, regex)
+# Patterns: (label, regex) — customize with your own keywords
 declare -a RULES=(
-  "PII:ezedi"
-  "PII:hermes"
-  "PII:playmcp"
-  "PII:sanghak"
-  "PII:상학"
-  "PII:에이전틱"
-  "PII:공모전"
-  "PII:nerin81@gmail"
+  "PII:YOUR_COMPANY"
+  "PII:INTERNAL_PROJECT"
+  "PII:SPECIFIC_PLATFORM"
+  "PII:YOUR_NAME"
+  "PII:YOUR_NAME_KR"
+  "PII:SPECIFIC_PLATFORM_KR"
+  "PII:SPECIFIC_EVENT_KR"
+  "PII:YOUR_EMAIL"
   "GH_PAT:ghp_[A-Za-z0-9]{20,}"
   "GH_PAT:gho_[A-Za-z0-9]{20,}"
   "GH_PAT:ghu_[A-Za-z0-9]{20,}"
@@ -358,10 +358,6 @@ for FILE in $STAGED; do
     LABEL="${RULE%%:*}"
     PATTERN="${RULE##*:}"
     if grep -EHn -- "$PATTERN" "$FILE" >/dev/null 2>&1; then
-      # Skip benign email patterns from noreply@github.com etc.
-      if [ "$LABEL" = "PII" ] && [ "$PATTERN" = "nerin81@gmail" ]; then
-        : # explicit PII check, no exception
-      fi
       echo "✘ mcp-guardian BLOCKED: $FILE matches $LABEL rule ($PATTERN)"
       grep -EHn -- "$PATTERN" "$FILE" | head -3 | sed 's/^/    /'
       FOUND=1
