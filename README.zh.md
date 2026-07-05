@@ -1,6 +1,6 @@
 # mcp-guardian
 
-[English](./README.md) | [한국어](./README.ko.md) | [中文](./README.zh.md) | [日本語](./README.ja.md)
+[English](./README.md) | [한국어](./README.ko.md) | [中文](./README.zh.md) | [日本語](./README.ja.md) | [Español](./README.es.md) | [Français](./README.fr.md) | [हिन्दी](./README.hi.md) | [العربية](./README.ar.md)
 
 ---
 
