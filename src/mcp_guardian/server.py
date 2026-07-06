@@ -537,9 +537,10 @@ def main() -> None:
         from starlette.applications import Starlette
         from starlette.routing import Mount
         port = int(os.getenv("PORT", 8000))
+        sse_app = mcp.sse_app()
         app = Starlette(routes=[
-            Mount("/mcp", app=mcp.sse_app()),
-            Mount("/", app=mcp.sse_app())
+            Mount("/mcp", app=sse_app),
+            Mount("/", app=sse_app)
         ])
         print(f"Starting mcp-guardian SSE Server on port {port}")
         uvicorn.run(app, host="0.0.0.0", port=port)
