@@ -536,13 +536,36 @@ def main() -> None:
         import uvicorn
         from starlette.applications import Starlette
         from starlette.routing import Mount
+
+        class KakaoProxyMiddleware:
+            def __init__(self, app):
+                self.app = app
+            async def __call__(self, scope, receive, send):
+                if scope["type"] in ("http", "websocket"):
+                    path = scope.get("path", "")
+                    if path.startswith("/mcp"):
+                        scope["path"] = path[4:] or "/"
+                
+                async def custom_send(event):
+                    if event["type"] == "http.response.start":
+                        headers = event.get("headers", [])
+                        new_headers = []
+                        for k, v in headers:
+                            val_str = v.decode("utf-8", errors="ignore")
+                            if "/messages" in val_str and not val_str.startswith("/mcp"):
+                                val_str = val_str.replace("/messages", "/mcp/messages")
+                                v = val_str.encode("utf-8")
+                            new_headers.append((k, v))
+                        event["headers"] = new_headers
+                    await send(event)
+                await self.app(scope, receive, custom_send)
+
         port = int(os.getenv("PORT", 8000))
         sse_app = mcp.sse_app()
-        app = Starlette(routes=[
-            Mount("/mcp", app=sse_app),
-            Mount("/", app=sse_app)
-        ])
-        print(f"Starting mcp-guardian SSE Server on port {port}")
+        app = Starlette(routes=[Mount("/", app=sse_app)])
+        app.add_middleware(KakaoProxyMiddleware)
+
+        print(f"Starting mcp-guardian SSE Server on port {port} with KakaoProxyMiddleware")
         uvicorn.run(app, host="0.0.0.0", port=port)
     else:
         mcp.run()
