@@ -385,13 +385,21 @@ exit 0
 mcp = FastMCP(SERVER_NAME)
 
 
-@mcp.tool()
+@mcp.tool(
+    annotations={
+        "title": "Scan Workspace Files",
+        "readOnlyHint": True,
+        "destructiveHint": False,
+        "openWorldHint": False,
+        "idempotentHint": True,
+    }
+)
 def check_files(
     paths: list[str],
     root: str | None = None,
     recursive: bool = True,
 ) -> dict[str, Any]:
-    """Scan files or directories for secrets, PII, and sensitive patterns.
+    """Scan files or directories for secrets, PII, and sensitive patterns from mcp-guardian(엠씨피가디언).
 
     Args:
         paths: List of file or directory paths (absolute or relative to root).
@@ -404,9 +412,17 @@ def check_files(
     return scan_paths(paths, root=root, recursive=recursive)
 
 
-@mcp.tool()
+@mcp.tool(
+    annotations={
+        "title": "Scan Staged Git Files",
+        "readOnlyHint": True,
+        "destructiveHint": False,
+        "openWorldHint": False,
+        "idempotentHint": True,
+    }
+)
 def check_commit(root: str | None = None) -> dict[str, Any]:
-    """Scan all files currently staged in the local git repository.
+    """Scan all files currently staged in the local git repository from mcp-guardian(엠씨피가디언).
 
     Mirrors the pre-commit hook behavior. Use before running `git commit`
     to get a structured result you can react to.
@@ -420,9 +436,17 @@ def check_commit(root: str | None = None) -> dict[str, Any]:
     return scan_staged(root=root)
 
 
-@mcp.tool()
+@mcp.tool(
+    annotations={
+        "title": "Scan Git Commit History",
+        "readOnlyHint": True,
+        "destructiveHint": False,
+        "openWorldHint": False,
+        "idempotentHint": True,
+    }
+)
 def sanitize_history(root: str | None = None, max_commits: int = 50) -> dict[str, Any]:
-    """Scan the last N commits for sensitive content that may have leaked.
+    """Scan the last N commits for sensitive content that may have leaked from mcp-guardian(엠씨피가디언).
 
     Use this after a suspected exposure to identify which commits contain
     secrets. The tool does not rewrite history — that is a separate manual
@@ -438,9 +462,17 @@ def sanitize_history(root: str | None = None, max_commits: int = 50) -> dict[str
     return scan_history(root=root, max_commits=max_commits)
 
 
-@mcp.tool()
+@mcp.tool(
+    annotations={
+        "title": "Check Git Remote URL Credentials",
+        "readOnlyHint": True,
+        "destructiveHint": False,
+        "openWorldHint": False,
+        "idempotentHint": True,
+    }
+)
 def check_remote_url_tool(root: str | None = None) -> dict[str, Any]:
-    """Verify the git origin URL does not embed a PAT in the credentials slot.
+    """Verify the git origin URL does not embed a PAT in the credentials slot from mcp-guardian(엠씨피가디언).
 
     Returns:
         Dict with verdict, url (credentials redacted), findings_count, findings.
@@ -448,12 +480,20 @@ def check_remote_url_tool(root: str | None = None) -> dict[str, Any]:
     return check_remote_url(root=root)
 
 
-@mcp.tool()
+@mcp.tool(
+    annotations={
+        "title": "Install Git Pre-Commit Hook",
+        "readOnlyHint": False,
+        "destructiveHint": False,
+        "openWorldHint": False,
+        "idempotentHint": False,
+    }
+)
 def install_hook(
     root: str | None = None,
     hook_source: str | None = None,
 ) -> dict[str, Any]:
-    """Install a pre-commit hook that blocks sensitive content at commit time.
+    """Install a pre-commit hook that blocks sensitive content at commit time from mcp-guardian(엠씨피가디언).
 
     The hook runs the same pattern rules as the MCP tools. Once installed,
     `git commit` itself will refuse to create a commit that contains
@@ -489,5 +529,19 @@ def get_rules() -> str:
     return json.dumps(payload, indent=2, ensure_ascii=False)
 
 
+def main() -> None:
+    import sys
+    import os
+    if len(sys.argv) > 1 and sys.argv[1] == "sse":
+        import uvicorn
+        from starlette.applications import Starlette
+        from starlette.routing import Mount
+        port = int(os.getenv("PORT", 8000))
+        app = Starlette(routes=[Mount("/", app=mcp.sse_app())])
+        print(f"Starting mcp-guardian SSE Server on port {port}")
+        uvicorn.run(app, host="0.0.0.0", port=port)
+    else:
+        mcp.run()
+
 if __name__ == "__main__":
-    mcp.run()
+    main()
