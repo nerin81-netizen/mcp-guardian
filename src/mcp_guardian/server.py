@@ -25,6 +25,7 @@ from mcp.server.fastmcp import FastMCP
 
 SERVER_NAME = "mcp-guardian"
 SERVER_VERSION = "0.1.0"
+SERVER_PORT = int(os.getenv("PORT", "8000"))
 
 # Paths exempt from pattern scanning. The guardian must be able to ship
 # its own rule definitions without triggering itself.
@@ -382,7 +383,7 @@ exit 0
 # MCP server registration
 # ---------------------------------------------------------------------------
 
-mcp = FastMCP(SERVER_NAME)
+mcp = FastMCP(SERVER_NAME, host="0.0.0.0", port=SERVER_PORT)
 
 
 @mcp.tool(
@@ -528,47 +529,15 @@ def get_rules() -> str:
     }
     return json.dumps(payload, indent=2, ensure_ascii=False)
 
-
 def main() -> None:
     import sys
-    import os
-    if len(sys.argv) > 1 and sys.argv[1] == "sse":
-        import uvicorn
-        from starlette.applications import Starlette
-        from starlette.routing import Mount
 
-        class KakaoProxyMiddleware:
-            def __init__(self, app):
-                self.app = app
-            async def __call__(self, scope, receive, send):
-                if scope["type"] in ("http", "websocket"):
-                    path = scope.get("path", "")
-                    if path.startswith("/mcp"):
-                        scope["path"] = path[4:] or "/"
-                
-                async def custom_send(event):
-                    if event["type"] == "http.response.start":
-                        headers = event.get("headers", [])
-                        new_headers = []
-                        for k, v in headers:
-                            val_str = v.decode("utf-8", errors="ignore")
-                            if "/messages" in val_str and not val_str.startswith("/mcp"):
-                                val_str = val_str.replace("/messages", "/mcp/messages")
-                                v = val_str.encode("utf-8")
-                            new_headers.append((k, v))
-                        event["headers"] = new_headers
-                    await send(event)
-                await self.app(scope, receive, custom_send)
-
-        port = int(os.getenv("PORT", 8000))
-        sse_app = mcp.sse_app()
-        app = Starlette(routes=[Mount("/", app=sse_app)])
-        app.add_middleware(KakaoProxyMiddleware)
-
-        print(f"Starting mcp-guardian SSE Server on port {port} with KakaoProxyMiddleware")
-        uvicorn.run(app, host="0.0.0.0", port=port)
+    if len(sys.argv) > 1 and sys.argv[1] in {"http", "streamable-http"}:
+        mcp.run(transport="streamable-http")
+    elif len(sys.argv) > 1 and sys.argv[1] == "sse":
+        mcp.run(transport="sse", mount_path="/mcp")
     else:
-        mcp.run()
+        mcp.run(transport="stdio")
 
 if __name__ == "__main__":
     main()

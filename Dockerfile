@@ -14,8 +14,8 @@ COPY src/ ./src/
 # Install dependencies and package itself
 RUN pip install --no-cache-dir . uvicorn starlette sse-starlette
 
-# Expose port for health checks and SSE transport
+# Expose port for health checks and Streamable HTTP transport
 EXPOSE 8000
 
-# Run in SSE mode by default on Kakao Cloud
-CMD ["python", "-m", "mcp_guardian.server", "sse"]
+# Run Streamable HTTP at /mcp by default on Kakao Cloud
+CMD ["python", "-m", "mcp_guardian.server", "streamable-http"]
